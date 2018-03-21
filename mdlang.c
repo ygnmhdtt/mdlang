@@ -6,21 +6,11 @@
 
 static char *p;
 static char *fname;
-static char func[26][100];
 
-__attribute__((noreturn)) static void error(char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
+static void error(char *fmt, char val) {
+  char *err = strcat(fmt, "\n");
+  printf(err, val);
   exit(1);
-}
-
-static void read_until(char c, char *buf) {
-  for (; *p != c; p++, buf++)
-    *buf = *p;
-  p++;
-  *buf = '\0';
 }
 
 static void skip() {
@@ -28,61 +18,11 @@ static void skip() {
     p++;
 }
 
-static void expect(char c) {
-  if (*p != c)
-    error("%c expected: %s", c, p);
-  p++;
-}
-
-static int eval(int *args);
-
-static int eval_string(char *code, int *args) {
-  char *orig = p;
-  p = code;
-  int val;
-  while (*p)
-    val = eval(args);
-  p = orig;
-  return val;
-}
-
 static int eval(int *args) {
+  puts("=======");
+  puts(p);
+  puts("=======");
   skip();
-
-  // Function parameter
-  if ('a' <= *p && *p <= 'z')
-    return args[*p++ - 'a'];
-
-  // Function definition
-  if ('A' <= *p && *p <= 'Z' && p[1] == '[') {
-    char name = *p;
-    p += 2;
-    read_until(']', func[name - 'A']);
-    return eval(args);
-  }
-
-  // "P" print primitive
-  if (*p == 'P') {
-    p++;
-    expect('(');
-    int val = eval(args);
-    expect(')');
-    printf("%d\n", val);
-    return val;
-  }
-
-  // Function application
-  if ('A' <= *p && *p <= 'Z' && p[1] == '(') {
-    int newargs[26];
-    char name = *p;
-    p += 2;
-
-    int i = 0;
-    for (skip(); *p != ')'; skip())
-      newargs[i++] = eval(args);
-    expect(')');
-    return eval_string(func[name - 'A'], newargs);
-  }
 
   // Literal numbers
   if (isdigit(*p)) {
@@ -106,7 +46,8 @@ static int eval(int *args) {
     }
   }
 
-  error("invalid character: %c", *p);
+  printf("invalid character: %c\n", *p);
+  exit(1);
 }
 
 int main(int argc, char **argv) {
@@ -117,24 +58,37 @@ int main(int argc, char **argv) {
       printf("%s file missing\n", fname);
       return -1;
   }
+  char str;
+  int len = 0;
+  char tx[13];
+  while((str = fgetc(fp)) != EOF) {
+    tx[len] = str;
+    len++;
+  }
+  tx[13] = '\0';
 
   // count characters
-  int len;
-  fseek(fp,0,SEEK_END);
-  len = ftell(fp);
-  fseek(fp,0,SEEK_SET);
+  // int len;
+  // fseek(fp,0,SEEK_END);
+  // len = ftell(fp);
+  // fseek(fp,0,SEEK_SET);
 
-  char text[len];
-  int chr;
-  int index = 0;
-  while((chr = fgetc(fp)) != EOF) {
-    text[index] = chr;
-    index++;
-  }
-  p = text;
+  // char text[13];
+  // int chr;
+  // int index = 0;
+  // while((chr = fgetc(fp)) != EOF) {
+  //   text[index] = chr;
+  //   index++;
+  //   printf("%d\n", index);
+  //   printf("%s\n", text);
+  //   printf("%c\n", text[index]);
+  // }
+  // text[13] = '\0';
+  // puts("======");
+  p = tx;
   while (*p)
     printf("%d\n", eval(0));
 
   fclose(fp);
-  return 0;
+  // return 0;
 }
